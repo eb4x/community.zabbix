@@ -111,9 +111,10 @@
         - ansible_os_family == 'RedHat'
 
     - name: PyMySQL
-      ansible.builtin.pip:
-        name: PyMySQL
-      register: installation_dependencies
-      until: installation_dependencies is succeeded
-      when:
-        - inventory_hostname in groups['mysql']
+      ansible.builtin.package:
+        name: "{{ pymysql_package[ ansible_facts['os_family'] ] }}"
+      vars:
+        pymysql_package:
+          Debian: python3-pymysql
+          RedHat: python3-PyMySQL
+      when: inventory_hostname in groups['mysql']
