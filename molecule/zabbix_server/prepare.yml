@@ -20,7 +20,7 @@
 
     - name: "Create postgresql Container"
       docker_container:
-        name: postgresql-host
+        name: "{{ item.name }}-db"
         image: postgres:13
         state: started
         recreate: true
