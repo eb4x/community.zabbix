@@ -1,4 +1,4 @@
 ---
 - hosts: all
   roles:
-    - role: zabbix_proxy
+    - role: community.zabbix.zabbix_proxy
