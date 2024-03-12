@@ -8,16 +8,6 @@ mysql_create_dir: create/
 __epel_repo:
   - epel
 
-zabbix_valid_server_versions:
-  "9":
-    - 6.4
-    - 6.2
-    - 6.0
-  "8":
-    - 6.4
-    - 6.2
-    - 6.0
-
 pgsql_depenencies:
   "9":
     - python3-psycopg2
