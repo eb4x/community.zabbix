@@ -2,33 +2,181 @@
 driver:
   name: docker
 platforms:
-  - name: zabbix-server-${MY_MOLECULE_CONTAINER:-centos}
-    image: geerlingguy/docker-${MY_MOLECULE_IMAGE:-rockylinux8}-ansible:latest
-    privileged: true
-    pre_build_image: true
-    command: ${MOLECULE_DOCKER_COMMAND:-""}
-    networks:
-      - name: zabbix
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    groups:
-      - ${MY_MOLECULE_DATABASE:-mysql}
-      - ${MY_MOLECULE_VERSION:-v64}
-      - ${MY_MOLECULE_INTERPRETER:-python3}
+# 6.4
+  - name: zabbix-server-6.4-mysql-el9
+    base_image: almalinux/9-init:latest
+    image: almalinux:9-init
+    dockerfile: Dockerfile.redhat.j2
+    my_DRY_options:
+      - &common
+        command: /sbin/init
+        privileged: true
+        networks:
+          - name: zabbix
+        volumes:
+          - /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd:ro
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-server-6.4-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+
+  - name: zabbix-server-6.4-mysql-debian-12
+    base_image: debian:12
+    image: debian:12-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-server-6.4-pgsql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+
+  - name: zabbix-server-6.4-mysql-ubuntu-22.04
+    base_image: ubuntu:22.04
+    image: ubuntu:22.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-server-6.4-pgsql-ubuntu-20.04
+    base_image: ubuntu:20.04
+    image: ubuntu:20.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+
+# 6.2
+  - name: zabbix-server-6.2-pgsql-el9
+    base_image: almalinux/9-init:latest
+    image: almalinux:9-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v62, pgsql ]
+  - name: zabbix-server-6.2-mysql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v62, mysql ]
+
+  - name: zabbix-server-6.2-pgsql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v62, pgsql ]
+  - name: zabbix-server-6.2-mysql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v62, mysql ]
+
+  - name: zabbix-server-6.2-pgsql-ubuntu-22.04
+    base_image: ubuntu:22.04
+    image: ubuntu:22.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v62, pgsql ]
+  - name: zabbix-server-6.2-mysql-ubuntu-20.04
+    base_image: ubuntu:20.04
+    image: ubuntu:20.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v62, mysql ]
+
+# 6.0
+  - name: zabbix-server-6.0-mysql-el9
+    base_image: almalinux/9-init:latest
+    image: almalinux:9-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-server-6.0-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+  - name: zabbix-server-6.0-mysql-debian-12
+    base_image: debian:12
+    image: debian:12-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-server-6.0-pgsql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+  - name: zabbix-server-6.0-mysql-ubuntu-22.04
+    base_image: ubuntu:22.04
+    image: ubuntu:22.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-server-6.0-pgsql-ubuntu-20.04
+    base_image: ubuntu:20.04
+    image: ubuntu:20.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+# 5.0
+  - name: zabbix-server-5.0-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v50, pgsql ]
+  - name: zabbix-server-5.0-mysql-debian-10
+    base_image: debian:10
+    image: debian:10-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, mysql ]
+  - name: zabbix-server-5.0-pgsql-debian-10
+    base_image: debian:10
+    image: debian:10-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, pgsql ]
+  - name: zabbix-server-5.0-mysql-ubuntu-18.04
+    base_image: ubuntu:18.04
+    mysql_image: mysql:5.7
+    image: ubuntu:18.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, mysql ]
+  - name: zabbix-server-5.0-pgsql-ubuntu-18.04
+    base_image: ubuntu:18.04
+    image: ubuntu:18.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, pgsql ]
 
 provisioner:
   name: ansible
   env:
     ANSIBLE_COLLECTIONS_PATHS: $HOME/.ansible/collections/ansible_collections/community/zabbix
     ANSIBLE_ROLES_PATH: $HOME/.ansible/collections/ansible_collections/community/zabbix/roles
+    ANSIBLE_LOCAL_TEMP: "${WORKSPACE:-$HOME}/.ansible/tmp"
+    ANSIBLE_REMOTE_TMP: /tmp
   inventory:
     group_vars:
-      python3:
+      all:
         ansible_python_interpreter: /usr/bin/python3
-      python:
-        ansible_python_interpreter: /usr/bin/python
       v64:
         zabbix_server_version: 6.4
+        zabbix_server_version_minor: 10
       v62:
         zabbix_server_version: 6.2
       v60:
@@ -36,9 +184,9 @@ provisioner:
       v50:
         zabbix_server_version: 5.0
       mysql:
+        zabbix_server_database: mysql
         zabbix_server_dbname: zabbix
         zabbix_server_dbuser: zabbix-dbuser
-        zabbix_server_database: mysql
         zabbix_server_dbport: 3306
         zabbix_server_dbhost: mysql-host
         zabbix_server_dbhost_run_install: false

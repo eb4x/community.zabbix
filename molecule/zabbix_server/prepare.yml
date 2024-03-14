@@ -5,8 +5,8 @@
   pre_tasks:
     - name: "Create MySQL Container"
       docker_container:
-        name: mysql-host
-        image: mysql:8.0.32
+        name: "{{ item.name }}-db"
+        image: "{{ item.mysql_image | default('mysql:8.0.32') }}"
         state: started
         recreate: true
         networks:

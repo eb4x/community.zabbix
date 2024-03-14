@@ -2,18 +2,227 @@
 driver:
   name: docker
 platforms:
-  - name: zabbix-proxy-${MY_MOLECULE_CONTAINER:-centos}
-    image: geerlingguy/docker-${MY_MOLECULE_IMAGE:-rockylinux8}-ansible:latest
-    privileged: true
-    pre_build_image: true
-    command: ${MOLECULE_DOCKER_COMMAND:-""}
-    networks:
-      - name: zabbix
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    groups:
-      - ${MY_MOLECULE_DATABASE:-mysql}
-      - ${MY_MOLECULE_VERSION:-v64}
+# 6.4
+  - name: zabbix-proxy-6.4-mysql-el9
+    base_image: almalinux/9-init:latest
+    image: almalinux:9-init
+    dockerfile: Dockerfile.redhat.j2
+    my_DRY_options:
+      - &common
+        command: /sbin/init
+        privileged: true
+        networks:
+          - name: zabbix
+        volumes:
+          - /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd:ro
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-proxy-6.4-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+  - name: zabbix-proxy-6.4-sqlite3-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v64, sqlite3 ]
+  - name: zabbix-proxy-6.4-sqlite3-el7
+    base_image: centos:7
+    image: centos:7-init
+    dockerfile: Dockerfile.centos.j2
+    my_DRY_options:
+      - &common_centos
+        command: /sbin/init
+        privileged: true
+        networks:
+          - name: zabbix
+        volumes:
+          - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    <<: *common_centos
+    groups: [ v64, sqlite3, centos ]
+
+  - name: zabbix-proxy-6.4-mysql-debian-12
+    base_image: debian:12
+    image: debian:12-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-proxy-6.4-pgsql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+  - name: zabbix-proxy-6.4-sqlite3-debian-10
+    base_image: debian:10
+    image: debian:10-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, sqlite3 ]
+
+  - name: zabbix-proxy-6.4-mysql-ubuntu-22.04
+    base_image: ubuntu:22.04
+    image: ubuntu:22.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, mysql ]
+  - name: zabbix-proxy-6.4-pgsql-ubuntu-20.04
+    base_image: ubuntu:20.04
+    image: ubuntu:20.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, pgsql ]
+  - name: zabbix-proxy-6.4-sqlite3-ubuntu-18.04
+    base_image: ubuntu:18.04
+    image: ubuntu:18.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v64, sqlite3 ]
+
+# 6.2
+#  - name: zabbix-proxy-6.2-pgsql-el9
+#    base_image: almalinux/9-init:latest
+#    image: almalinux:9-init
+#    dockerfile: Dockerfile.redhat.j2
+#    <<: *common
+#    groups: [ v62, pgsql ]
+#  - name: zabbix-proxy-6.2-mysql-el8
+#    base_image: almalinux/8-init:latest
+#    image: almalinux:8-init
+#    dockerfile: Dockerfile.redhat.j2
+#    <<: *common
+#    groups: [ v62, mysql ]
+#
+#  - name: zabbix-proxy-6.2-pgsql-debian-11
+#    base_image: debian:11
+#    image: debian:11-init
+#    dockerfile: Dockerfile.debian.j2
+#    <<: *common
+#    groups: [ v62, pgsql ]
+#  - name: zabbix-proxy-6.2-mysql-debian-11
+#    base_image: debian:11
+#    image: debian:11-init
+#    dockerfile: Dockerfile.debian.j2
+#    <<: *common
+#    groups: [ v62, mysql ]
+#
+#  - name: zabbix-proxy-6.2-pgsql-ubuntu-22.04
+#    base_image: ubuntu:22.04
+#    image: ubuntu:22.04-init
+#    dockerfile: Dockerfile.debian.j2
+#    <<: *common
+#    groups: [ v62, pgsql ]
+#  - name: zabbix-proxy-6.2-mysql-ubuntu-20.04
+#    base_image: ubuntu:20.04
+#    image: ubuntu:20.04-init
+#    dockerfile: Dockerfile.debian.j2
+#    <<: *common
+#    groups: [ v62, mysql ]
+
+# 6.0
+  - name: zabbix-proxy-6.0-mysql-el9
+    base_image: almalinux/9-init:latest
+    image: almalinux:9-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-proxy-6.0-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+  - name: zabbix-proxy-6.0-mysql-debian-12
+    base_image: debian:12
+    image: debian:12-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-proxy-6.0-pgsql-debian-11
+    base_image: debian:11
+    image: debian:11-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+  - name: zabbix-proxy-6.0-mysql-ubuntu-22.04
+    base_image: ubuntu:22.04
+    image: ubuntu:22.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, mysql ]
+  - name: zabbix-proxy-6.0-pgsql-ubuntu-20.04
+    base_image: ubuntu:20.04
+    image: ubuntu:20.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v60, pgsql ]
+
+# 5.0
+  - name: zabbix-proxy-5.0-pgsql-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v50, pgsql ]
+  - name: zabbix-proxy-5.0-sqlite3-el8
+    base_image: almalinux/8-init:latest
+    image: almalinux:8-init
+    dockerfile: Dockerfile.redhat.j2
+    <<: *common
+    groups: [ v50, sqlite3 ]
+
+  - name: zabbix-proxy-5.0-mysql-el7
+    base_image: centos:7
+    #mysql_image: mysql:5.7
+    image: centos:7-init
+    dockerfile: Dockerfile.centos.j2
+    <<: *common_centos
+    groups: [ v50, mysql, centos ]
+  - name: zabbix-proxy-5.0-pgsql-el7
+    base_image: centos:7
+    image: centos:7-init
+    dockerfile: Dockerfile.centos.j2
+    <<: *common_centos
+    groups: [ v50, pgsql, centos ]
+  - name: zabbix-proxy-5.0-sqlite3-el7
+    base_image: centos:7
+    image: centos:7-init
+    dockerfile: Dockerfile.centos.j2
+    <<: *common_centos
+    groups: [ v50, sqlite3, centos ]
+
+  - name: zabbix-proxy-5.0-mysql-debian-10
+    base_image: debian:10
+    mysql_image: mysql:5.7
+    image: debian:10-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, mysql ]
+  - name: zabbix-proxy-5.0-pgsql-debian-10
+    base_image: debian:10
+    image: debian:10-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, pgsql ]
+
+  - name: zabbix-proxy-5.0-mysql-ubuntu-18.04
+    base_image: ubuntu:18.04
+    mysql_image: mysql:5.7
+    image: ubuntu:18.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, mysql ]
+  - name: zabbix-proxy-5.0-pgsql-ubuntu-18.04
+    base_image: ubuntu:18.04
+    image: ubuntu:18.04-init
+    dockerfile: Dockerfile.debian.j2
+    <<: *common
+    groups: [ v50, pgsql ]
 
 provisioner:
   name: ansible
@@ -26,10 +235,16 @@ provisioner:
         ansible_python_interpreter: /usr/bin/python3
       v64:
         zabbix_proxy_version: 6.4
+        zabbix_proxy_version_minor: 10
       v62:
         zabbix_proxy_version: 6.2
       v60:
         zabbix_proxy_version: 6.0
+      v50:
+        zabbix_proxy_version: 5.0
+        enable_version_check: false
+      centos:
+        zabbix_proxy_disable_repo: []
       mysql:
         zabbix_proxy_dbname: zabbix
         zabbix_proxy_dbuser: zabbix-dbuser
@@ -55,5 +270,6 @@ provisioner:
         zabbix_proxy_database: sqlite3
         zabbix_proxy_database_long: sqlite3
         zabbix_proxy_dbname: /path/to/sqlite3.db
+
 verifier:
   name: testinfra
