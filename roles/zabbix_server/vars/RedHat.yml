@@ -11,7 +11,7 @@ __epel_repo:
 pgsql_depenencies:
   - python3-psycopg2
 
-mysql_client_pkgs:
+_zabbix_server_mysql_dependencies:
   - mysql
   - python3-PyMySQL
 
