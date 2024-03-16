@@ -8,6 +8,10 @@ mysql_create_dir: ""
 debian_keyring_path: /etc/apt/keyrings/
 zabbix_gpg_key: "{{ debian_keyring_path }}/zabbix-official-repo.asc"
 
+_zabbix_server_pgsql_dependencies:
+  - postgresql-client
+  - python3-psycopg2
+
 _zabbix_server_mysql_dependencies:
   - default-mysql-client
   - python3-mysqldb

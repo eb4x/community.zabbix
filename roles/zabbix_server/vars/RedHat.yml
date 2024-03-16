@@ -8,7 +8,8 @@ mysql_create_dir: create/
 __epel_repo:
   - epel
 
-pgsql_depenencies:
+_zabbix_server_pgsql_dependencies:
+  - postgresql
   - python3-psycopg2
 
 _zabbix_server_mysql_dependencies:
