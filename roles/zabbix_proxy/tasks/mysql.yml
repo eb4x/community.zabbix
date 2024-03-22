@@ -23,14 +23,6 @@
   tags:
     - database
 
-- name: PyMySQL
-  ansible.builtin.pip:
-    name: PyMySQL
-  register: installation_dependencies
-  until: installation_dependencies is succeeded
-  tags:
-    - database
-
 - name: "MySQL | Create database"
   community.mysql.mysql_db:
     name: "{{ zabbix_proxy_dbname }}"
