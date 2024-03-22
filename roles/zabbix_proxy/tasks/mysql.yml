@@ -1,5 +1,22 @@
 ---
 # task file for mysql
+- name: "Install MySQL dependencies"
+  when:
+    - zabbix_proxy_database_creation or zabbix_proxy_database_sqlload
+    - zabbix_proxy_install_database_client
+  ansible.builtin.package:
+    name: "{{ _zabbix_proxy_mysql_dependencies[ ansible_facts['distribution_major_version'] ] }}"
+  environment:
+    http_proxy: "{{ zabbix_http_proxy | default(None) | default(omit) }}"
+    https_proxy: "{{ zabbix_https_proxy | default(None) | default(omit) }}"
+  become: true
+  register: _zabbix_proxy_dependencies_installed
+  until: _zabbix_proxy_dependencies_installed is succeeded
+  tags:
+    - install
+    - database
+    - dependencies
+
 - name: "MySQL | Set the correct delegated_dbhost (to support MySQL db deployment on a remote dbhost)"
   ansible.builtin.set_fact:
     delegated_dbhost: "{{ zabbix_proxy_dbhost if (zabbix_proxy_dbhost != 'localhost') else inventory_hostname }}"

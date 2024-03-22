@@ -24,7 +24,7 @@ zabbix_valid_proxy_versions:
     - 6.2
     - 6.0
 
-mysql_client_pkgs:
+_zabbix_proxy_mysql_dependencies:
   # Debian
   "12":
     - default-mysql-client
