@@ -8,7 +8,7 @@ platforms:
     pre_build_image: true
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     networks:
-      - name: zabbix
+      - name: zabbix-server-${MY_MOLECULE_VERSION:-v64}-${MY_MOLECULE_DATABASE}-${MY_MOLECULE_CONTAINER:-centos}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     groups:

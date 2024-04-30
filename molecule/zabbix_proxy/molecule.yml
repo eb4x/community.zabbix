@@ -9,7 +9,7 @@ platforms:
     privileged: true
     command: /sbin/init
     networks:
-      - name: zabbix
+      - name: zabbix-proxy-${MY_MOLECULE_VERSION:-v64}-${MY_MOLECULE_DATABASE}-${MY_MOLECULE_CONTAINER:-centos}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     groups:
