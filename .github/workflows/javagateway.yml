@@ -13,6 +13,8 @@ on:
       - "molecule/zabbix_javagateway/**"
       - "molecule/requirements.txt"
       - ".github/workflows/javagateway.yml"
+  workflow_dispatch:
+
 jobs:
   molecule:
     runs-on: self-hosted
