@@ -13,6 +13,8 @@ on:
       - "molecule/zabbix_server/**"
       - "molecule/requirements.txt"
       - ".github/workflows/server.yml"
+  workflow_dispatch:
+
 jobs:
   molecule:
     runs-on: self-hosted

@@ -3,6 +3,7 @@ name: repo-sanity
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   tox-linters:

@@ -13,6 +13,8 @@ on:
       - "molecule/zabbix_proxy/**"
       - "molecule/requirements.txt"
       - ".github/workflows/proxy.yml"
+  workflow_dispatch:
+
 jobs:
   molecule:
     runs-on: self-hosted
