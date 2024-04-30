@@ -10,7 +10,7 @@
         state: started
         recreate: true
         networks:
-          - name: zabbix
+          - name: "{{ item.name }}"
         env:
           MYSQL_ROOT_PASSWORD: changeme
       no_log: true
@@ -25,7 +25,7 @@
         state: started
         recreate: true
         networks:
-          - name: zabbix
+          - name: "{{ item.name }}"
         env:
           POSTGRES_PASSWORD: changeme
       no_log: true
