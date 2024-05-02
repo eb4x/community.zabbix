@@ -2,11 +2,12 @@
 driver:
   name: docker
 platforms:
-  - name: zabbix-proxy-${MY_MOLECULE_CONTAINER:-centos}
-    image: geerlingguy/docker-${MY_MOLECULE_IMAGE:-rockylinux8}-ansible:latest
+  - name: zabbix-proxy-${MY_MOLECULE_VERSION:-v64}-${MY_MOLECULE_DATABASE:-mysql}-${MY_MOLECULE_CONTAINER:-centos7}
+    dockerfile: Dockerfile.${MY_MOLECULE_OS_FAMILY}.j2
+    base_image: ${MY_MOLECULE_IMAGE:-centos:7-init}
+    image: ${MY_MOLECULE_CONTAINER:-centos7}
     privileged: true
-    pre_build_image: true
-    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    command: "/usr/sbin/init"
     networks:
       - name: zabbix
     volumes:
