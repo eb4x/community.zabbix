@@ -68,16 +68,6 @@
   tags:
     - install
 
-- name: "Get legacy file-path for database schema"
-  when:
-    - zabbix_proxy_database_sqlload
-    - zabbix_proxy_version is version('6.0', '<')
-  ansible.builtin.shell: "ls -1 /usr/share/doc/zabbix-proxy-{{ zabbix_proxy_database }}*/schema.sql.gz"
-  changed_when: false
-  register: ls_output_schema
-  tags:
-    - database
-
 - name: "Initialize the database"
   ansible.builtin.include_tasks: "initialize-{{ zabbix_proxy_database }}.yml"
 
