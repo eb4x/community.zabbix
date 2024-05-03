@@ -87,6 +87,7 @@ jobs:
           sed -i "s/community\.mysql:\s\*$/community.mysql: \"3.9.0\"/" galaxy.yml
           sed -i "s/community\.postgresql:\s\*$/community.postgresql: \"3.4.0\"/" galaxy.yml
 
+          cat galaxy.yml
           collection_file=$( basename $(ansible-galaxy collection build -f | awk -F" " '{print $NF}'))
           echo "COLLECTION_FILE=$collection_file" >> $GITHUB_ENV
 
