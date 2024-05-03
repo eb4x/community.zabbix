@@ -16,7 +16,7 @@ on:
 jobs:
   integration:
     runs-on: self-hosted
-    name: I (${{ matrix.zabbix_container.version}} Ⓐ${{ matrix.ansible }}+py${{ matrix.python }}})
+    name: I (${{ matrix.zabbix_container.version }} Ⓐ${{ matrix.ansible }}+py${{ matrix.python }}})
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +57,7 @@ jobs:
       # the Zabbix server. To do this we spin up a Docker container using the `matrix`
       # of version and ports specified earlier.
       - name: Zabbix container server provisioning
-        uses: isbang/compose-action@v1.5.0
+        uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           compose-file: "./ansible_collections/community/zabbix/docker-compose.yml"
         env:
