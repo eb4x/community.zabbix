@@ -1,0 +1,96 @@
+---
+- hosts: all
+  tasks:
+    - name: Install PostgreSQL server w/ansible deps
+      package:
+        name:
+          - "{{ _pgsql_package[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+          - python3-psycopg2
+        update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+      become: true
+      vars:
+        _pgsql_package:
+          Debian-10: postgresql-11 # Needs pg-13
+          Debian-11: postgresql-13
+          Debian-12: postgresql-15
+          RedHat-8: "@postgresql:13/server"
+          RedHat-9: "@postgresql:15/server"
+
+    - name: RedHat setup
+      when: ansible_facts['os_family'] == 'RedHat'
+      block:
+        - name: Check if PostgreSQL is initialized
+          stat:
+            path: /var/lib/pgsql/data/PG_VERSION
+          register: _pg_version
+          become: true
+
+        - name: Initialize PostgreSQL database
+          when: not _pg_version.stat.exists
+          command: /usr/bin/postgresql-setup --initdb
+          become: true
+
+        #- name: Open firewalld
+        #  when: false
+        #  ansible.posix.firewalld:
+        #    zone: pulic
+        #    service: postgresql
+        #    permanent: true
+        #    state: enabled
+        #  become: true
+
+
+    - name: Add pg_hba
+      community.postgresql.postgresql_pg_hba:
+        dest: "{{ _pg_hba_path[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+        state: "{{ item.state }}"
+        contype: host
+        databases: "{{ item.databases }}"
+        users: "{{ item.users }}"
+        address: "{{ item.address }}"
+        method: "{{ item.method | default('md5') }}"
+      loop:
+        - { state: absent,  databases: all, users: all, address: "127.0.0.1/32", method: ident }
+        - { state: absent,  databases: all, users: all, address: "::1/128",      method: ident }
+        - { state: present, databases: all, users: all, address: "127.0.0.1/32", method: md5 }
+        - { state: present, databases: all, users: all, address: "::1/128",      method: md5 }
+        - state: present
+          databases: "{{ zabbix_server_dbname | default('zabbix-server') }}"
+          users: "{{ zabbix_server_dbuser | default('zabbix-server') }}"
+          address: 0.0.0.0/0
+      vars:
+        _pg_hba_path:
+          Debian-10: /etc/postgresql/11/main/pg_hba.conf
+          Debian-11: /etc/postgresql/13/main/pg_hba.conf
+          Debian-12: /etc/postgresql/15/main/pg_hba.conf
+          RedHat-8: /var/lib/pgsql/data/pg_hba.conf
+          RedHat-9: /var/lib/pgsql/data/pg_hba.conf
+      notify: Restart PostgreSQL service
+      become: true
+
+    # meta is here to prevent the "double-bounce" of the service. Unfortunately
+    # postgres has to be running for postgresql_set to work, so we'll get a
+    # double-bounce regardless.
+    #- meta: flush_handlers
+
+    - name: Verify PostgreSQL service is running
+      service:
+        name: postgresql
+        enabled: true
+        state: started
+      become: true
+
+    - name: Configure listen_address
+      community.postgresql.postgresql_set:
+        name: listen_addresses
+        value: '*'
+      become: true
+      become_user: postgres
+      notify: Restart PostgreSQL service
+
+  handlers:
+    - name: Restart PostgreSQL service
+      service:
+        name: postgresql
+        state: restarted
+      become: true
