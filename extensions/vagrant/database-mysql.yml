@@ -1,0 +1,106 @@
+---
+- hosts: all
+  become: true
+
+  vars:
+    _mysql_unix_socket:
+      Debian: /run/mysqld/mysqld.sock
+      RedHat: /var/lib/mysql/mysql.sock
+      Suse: /run/mysql/mysql.sock
+    _mysql_conf_dir:
+      Debian: /etc/mysql
+      RedHat: /etc/my.cnf.d
+      Suse: /etc/my.cnf.d
+    _mysql_server_conf:
+      Debian: "{{ _mysql_conf_dir[ansible_facts.os_family] }}/mariadb.conf.d/50-server.cnf"
+      RedHat: "{{ _mysql_conf_dir[ansible_facts.os_family] }}/mariadb-server.cnf"
+      Suse: /etc/my.cnf
+    _mysql_certs_dir: "{{ _mysql_conf_dir[ansible_facts.os_family] }}/certs"
+  tasks:
+    - name: Install MySQL server w/ansible deps
+      package:
+        name:
+          - "{{ _mysql_package[_os_key] | default(_mysql_package[ansible_facts.os_family]) }}"
+          - "{{ _mysql_ansible_deps[_os_key] | default(_mysql_ansible_deps[ansible_facts.os_family]) }}"
+        update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+      vars:
+        _os_key: "{{ (ansible_facts.os_family in ['RedHat', 'Suse']) | ternary(ansible_facts.os_family, ansible_facts.distribution) }}-{{ ansible_facts.distribution_major_version }}"
+        _mysql_package:
+          Debian: mariadb-server
+          RedHat: mariadb-server
+          RedHat-8: "@mariadb:10.5/server"
+          RedHat-9: "@mariadb:10.11/server"
+          Suse: mariadb
+        _mysql_ansible_deps:
+          RedHat: python3-PyMySQL
+          Debian: pymysql
+          Debian-12: python3-pymysql
+          Debian-13: python3-pymysql
+          Ubuntu: python3-pymysql
+          Suse: "python3{% if ansible_facts.python.version.minor != 6 %}{{ ansible_facts.python.version.minor }}{% endif %}-PyMySQL"
+
+    - name: Do certificates
+      block:
+        - name: Allow MariaDB to listen on all interfaces
+          ansible.builtin.lineinfile:
+            path: "{{ _mysql_server_conf[ansible_facts.os_family] }}"
+            regexp: '^bind-address'
+            line: 'bind-address = 0.0.0.0'
+          notify: Restart MySQL
+
+        - name: Create certs dir
+          file:
+            state: directory
+            path: "{{ _mysql_certs_dir }}"
+
+        - name: Copy certificates
+          copy:
+            content: "{{ item.content }}"
+            dest: "{{ _mysql_certs_dir }}/{{ item.filename }}"
+          loop_control:
+            label: "{{ item.filename }}"
+          loop:
+            - filename: server.key
+              content: |
+                {{ lookup('file', 'certs/' ~ ansible_facts['fqdn'] ~ '.key') }}
+            - filename: server.crt
+              content: |
+                {{ lookup('file', 'certs/' ~ ansible_facts['fqdn'] ~ '.crt') }}
+            - filename: ca.pem
+              content: |
+                {{ lookup('file', 'ca/Vagrant_Intermediate_CA.crt') }}
+                {{ lookup('file', 'ca/Vagrant_Root_CA.crt') }}
+
+        - name: Enable certs
+          ini_file:
+            create: false
+            path: "{{ _mysql_server_conf[ansible_facts.os_family] }}"
+            section: server
+            option: "{{ item.option }}"
+            value: "{{ item.value }}"
+          loop:
+            - { option: ssl_key,  value: "{{ _mysql_certs_dir }}/server.key" }
+            - { option: ssl_cert, value: "{{ _mysql_certs_dir }}/server.crt" }
+            - { option: ssl_ca,   value: "{{ _mysql_certs_dir }}/ca.pem" }
+          notify: Restart MySQL
+
+    - name: Verify MySQL service is running
+      service:
+        name: mariadb
+        enabled: true
+        state: started
+
+    - name: Add root user
+      community.mysql.mysql_user:
+        login_unix_socket: "{{ _mysql_unix_socket[ansible_facts.os_family] }}"
+        name: root
+        password: changeme
+        host: "{{ ansible_facts['default_ipv4']['network'] | regex_replace('\\.0$', '.%') }}"
+        priv: "*.*:ALL,GRANT"
+
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mariadb
+        enabled: true
+        state: restarted

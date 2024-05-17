@@ -1,0 +1,145 @@
+---
+- hosts: all
+
+  pre_tasks:
+    - name: Patch CA for vagrant
+      become: true
+      block:
+        - name: Add Vagrant CA to trust
+          copy:
+            content: |
+              {{ lookup('file', 'ca/Vagrant_Intermediate_CA.crt') }}
+              {{ lookup('file', 'ca/Vagrant_Root_CA.crt') }}
+            dest: "{{ _dest[ansible_facts.os_family] }}"
+          vars:
+            _dest:
+              Debian: /usr/local/share/ca-certificates/vagrant.crt
+              RedHat: /etc/pki/ca-trust/source/anchors/vagrant.pem
+              Suse: /etc/pki/trust/anchors/vagrant.pem
+          register: _ca
+        - name: Update CA trust
+          when: _ca is changed
+          command:
+            cmd: "{{ _cmd[ansible_facts.os_family] }}"
+          vars:
+            _cmd:
+              Debian: update-ca-certificates
+              RedHat: update-ca-trust
+              Suse: update-ca-certificates
+
+#    - name: Resize storage
+#      when:
+#        - ansible_facts['os_family'] == 'RedHat'
+#      become: true
+#      block:
+#        - name: Install growpart
+#          package:
+#            name: "{{ _growpart_packages[ansible_facts.os_family] }}"
+#            update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+#          vars:
+#            _growpart_packages:
+#              Debian: ["cloud-guest-utils", "parted"]
+#              RedHat: ["cloud-utils-growpart", "parted"]
+#        - name: Get info on /dev/sda
+#          community.general.parted:
+#            device: /dev/sda
+#            unit: s
+#          register: _part_info
+#        - name: Grow last partition
+#          when:
+#            - _last_partition_end_sector | float < _disk_partition_end_sector | float
+#            - (_disk_partition_end_sector | float - _last_partition_end_sector | float) >= 2048 # default fudge
+#          command:
+#            cmd: "growpart /dev/sda {{ _last_partition_nr  }}"
+#          vars:
+#            _disk_size_in_sectors: "{{ _part_info.disk.size }}"
+#            _disk_table: "{{ _part_info.disk.table }}"
+#            _backup_gpt_header: 34.0
+#            _disk_partition_end_sector: "{{ _disk_size_in_sectors | float - ((_disk_table == 'gpt') | ternary(_backup_gpt_header, 0.0)) }}"
+#            _last_partition_end_sector: "{{ (_part_info.partitions | last).end }}"
+#            _last_partition_nr: "{{ _part_info.partitions | length }}"
+#        - name: Resize filesystem on last partition
+#          community.general.filesystem:
+#            dev: "/dev/sda{{ _part_info.partitions | length }}"
+#            fstype: "{{ (_part_info.partitions | last).fstype }}"
+#            resizefs: true
+
+  tasks:
+    - name: Propagate ssh keys
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', ssh_key_path) }}"
+      vars:
+        ssh_key_path: "{{ lookup('first_found', ssh_key_paths) }}"
+        ssh_key_paths:
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_ed25519.pub"
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_ecdsa.pub"
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
+
+    - name: Remove buster-backports
+      when: ansible_facts['os_family'] == 'Debian'
+      lineinfile:
+        path: /etc/apt/sources.list
+        regexp: '^.*buster-backports.*$'
+        state: absent
+      become: true
+
+    - debug:
+        var: ansible_facts['distribution_version']
+
+#    - name: Add openSUSE repos
+#      when: ansible_facts['os_family'] == 'Suse'
+#      ansible.builtin.zypper_repository:
+#        name: "{{ item.name }}"
+#        repo: "{{ item.repo }}"
+#        auto_import_keys: true
+#        enabled: true
+#        autorefresh: true
+#      become: true
+#      loop:
+#        - name: leap-oss
+#          repo: "https://download.opensuse.org/distribution/leap/{{ ansible_facts['distribution_version'] }}/repo/oss/"
+
+    - name: Install potentially missing packages
+      when: ansible_facts['system'] == 'Linux'
+      package:
+        name: "{{ _packages | select | list }}"
+        state: "{{ (ansible_facts['os_family'] == 'Suse') | ternary('latest', 'present') }}"
+        update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+      vars:
+        _packages:
+          - acl # Fix become_user issues
+          - bash-completion
+          - gpg
+          - "{{ (ansible_facts['os_family'] == 'Suse') | ternary('libexpat1', '') }}"
+      become: true
+
+    - name: Install/upgrade FreeBSD packages
+      when: ansible_facts['os_family'] == 'FreeBSD'
+      become: true
+      block:
+        - package:
+            name:
+              - python3
+              - pcre2
+            state: latest
+        # state: latest doesn't work on freebsd? so we force the upgrade
+        - name: Upgrade pcre2
+          command:
+            cmd: pkg install -y pcre2
+          register: _res
+        - debug:
+            var: _res
+
+    - name: Locale_gen
+      when: ansible_facts['distribution'] == 'Debian'
+      become: true
+      community.general.locale_gen:
+        name: en_US.UTF-8
+
+    - name: Set shell to bash
+      user:
+        name: "{{ ansible_user }}"
+        shell: /bin/bash
+      become: true
+

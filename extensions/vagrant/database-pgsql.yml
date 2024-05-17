@@ -1,0 +1,241 @@
+---
+- hosts: all
+  become: true
+
+  vars:
+    install_timescaledb: false
+    _os_key: "{{ (ansible_facts.os_family in ['RedHat', 'Suse']) | ternary(ansible_facts.os_family, ansible_facts.distribution) }}-{{ ansible_facts.distribution_major_version }}"
+    _pgsql_default_version:
+      Debian-10: "11"
+      Debian-11: "13"
+      Debian-12: "15"
+      Debian-13: "17"
+      RedHat-8: "15"  #"13"
+      RedHat-9: "15"
+      RedHat-10: "16"
+      Suse-15: "18"
+      Ubuntu-22: "14"
+      Ubuntu-24: "16"
+    pgsql_version: "{{ _pgsql_default_version[_os_key] }}"
+
+    _pgsql_package:
+      Debian: "{{ install_timescaledb | ternary('timescaledb-2-postgresql-' ~ pgsql_version, 'postgresql-' ~ pgsql_version) }}"
+      RedHat: "{{ install_timescaledb | ternary('timescaledb-2-postgresql-' ~ pgsql_version, '@postgresql:' ~ pgsql_version ~ '/server') }}"
+      RedHat-10: "{{ install_timescaledb | ternary('timescaledb_' ~ pgsql_version, 'postgresql-server') }}"
+      Suse: "postgresql-server"
+    pgsql_package: "{{ _pgsql_package[_os_key] | default(_pgsql_package[ansible_facts.os_family]) }}"
+    _pgsql_service:
+      Debian: "{{ install_timescaledb | ternary('postgresql@' ~ pgsql_version ~ '-main', 'postgresql') }}"
+      RedHat: "{{ install_timescaledb | ternary('postgresql-' ~ pgsql_version, 'postgresql') }}"
+      Suse: "postgresql"
+    _pgsql_config_dir:
+      Debian: "/etc/postgresql/{{ pgsql_version }}/main"
+      RedHat: "{{ install_timescaledb | ternary('/var/lib/pgsql/' ~ pgsql_version ~ '/data', '/var/lib/pgsql/data') }}"
+      Suse: "/var/lib/pgsql/data"
+    _pgsql_data_dir:
+      Debian: "/var/lib/postgresql/{{ pgsql_version }}/main"
+      RedHat: "{{ install_timescaledb | ternary('/var/lib/pgsql/' ~ pgsql_version ~ '/data', '/var/lib/pgsql/data') }}"
+      Suse: "/var/lib/pgsql/data"
+
+  tasks:
+    - name: PostgreSQL / TimescaleDB for RedHat
+      when:
+        - install_timescaledb
+        - ansible_facts['os_family'] == 'RedHat'
+      block:
+        - name: Install pgsql repo
+          yum:
+            name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-{{ ansible_facts['distribution_major_version'] }}-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+            disable_gpg_check: true
+
+        - name: Disable postgresql AppStream module
+          when: ansible_facts.distribution_major_version in ['8']
+          command:
+            cmd: dnf module disable -y postgresql
+          register: _dnf_module_postgresql
+          changed_when: "'Disabling modules' in _dnf_module_postgresql.stdout"
+
+        - name: Install Timescale repo
+          yum_repository:
+            file: timescale_timescaledb
+            name: timescale_timescaledb
+            description: timescale_timescaledb
+            baseurl: https://packagecloud.io/timescale/timescaledb/el/{{ ansible_facts['distribution_major_version'] }}/$basearch
+            enabled: true
+            repo_gpgcheck: true
+            gpgcheck: false
+            gpgkey: https://packagecloud.io/timescale/timescaledb/gpgkey
+            metadata_expire: 300
+            sslverify: true
+            sslcacert: /etc/pki/tls/certs/ca-bundle.crt
+
+    - name: PostgreSQL / TimescaleDB for Debian
+      when:
+        - install_timescaledb
+        - ansible_facts['os_family'] == 'Debian'
+      block:
+        - name: Get pgdg/timescale signing keys
+          get_url:
+            url: "{{ item.url }}"
+            dest: "/etc/apt/keyrings/{{ item.filename }}"
+          loop:
+            - filename: pgdg.asc
+              url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+            - filename: timescaledb.asc
+              url: https://packagecloud.io/timescale/timescaledb/gpgkey
+
+        - name: Install pgdg/timescale repos
+          when: _os_key in ['Debian-10', 'Debian-11', 'Ubuntu-22']
+          apt_repository:
+            filename: "{{ item.filename }}"
+            repo: "{{ item.repo }}"
+          loop:
+            - filename: pgdg
+              repo: "deb [signed-by=/etc/apt/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_facts['distribution_release'] | lower }}-pgdg main"
+            - filename: timescaledb
+              repo: "deb [signed-by=/etc/apt/keyrings/timescaledb.asc] https://packagecloud.io/timescale/timescaledb/{{ ansible_facts['distribution'] | lower }} {{ ansible_facts['distribution_release'] | lower }} main"
+
+        - name: Install pgdg/timescale repos (deb822)
+          when: _os_key in ['Debian-12', 'Debian-13', 'Ubuntu-24']
+          deb822_repository:
+            name: "{{ item.name }}"
+            types: [deb]
+            uris: "{{ item.uris }}"
+            suites: "{{ item.suites }}"
+            components:
+              - main
+            signed_by: "/etc/apt/keyrings/{{ item.name }}.asc"
+          loop:
+            - name: pgdg
+              uris: ["https://apt.postgresql.org/pub/repos/apt"]
+              suites: ["{{ ansible_facts['distribution_release'] | lower }}-pgdg"]
+            - name: timescaledb
+              uris: ["https://packagecloud.io/timescale/timescaledb/{{ ansible_facts['distribution'] | lower }}"]
+              suites: ["{{ ansible_facts['distribution_release'] | lower }}"]
+
+    - name: Install PostgreSQL server w/ansible deps
+      package:
+        name:
+          - "{{ pgsql_package }}"
+          - "{{ _ansible_deps[ansible_facts.os_family] | default('python3-psycopg2') }}"
+        update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+      vars:
+         _ansible_deps:
+           Suse: "python3{% if ansible_facts.python.version.minor != 6 %}{{ ansible_facts.python.version.minor }}{% endif %}-psycopg2"
+
+    - name: RedHat setup
+      when: ansible_facts['os_family'] in ['RedHat', 'Suse']
+      block:
+        - name: Check if PostgreSQL is initialized
+          stat:
+            path: "{{ _pgsql_data_dir[ansible_facts.os_family] }}/PG_VERSION"
+          register: _pg_version
+
+        - name: Initialize PostgreSQL database
+          when: not _pg_version.stat.exists
+          become_user: "{{ install_timescaledb | ternary(omit, 'postgres') }}"
+          command: "{{ install_timescaledb | ternary(
+                      _setup_timescale_cmd[ansible_facts.os_family],
+                      _setup_postgresql_cmd[ansible_facts.os_family]
+                   )}}"
+          vars:
+            _setup_timescale_cmd:
+              RedHat: "/usr/pgsql-{{ pgsql_version }}/bin/postgresql-{{ pgsql_version }}-setup initdb"
+            _setup_postgresql_cmd:
+              RedHat: "/usr/bin/postgresql-setup --initdb"
+              Suse: "/usr/bin/initdb --auth=ident {{ _pgsql_data_dir[ansible_facts.os_family] }}"
+
+        #- name: Open firewalld
+        #  when: false
+        #  ansible.posix.firewalld:
+        #    zone: pulic
+        #    service: postgresql
+        #    permanent: true
+        #    state: enabled
+
+    - name: Do certificates
+      block:
+        - name: Create certs dir
+          file:
+            state: directory
+            path: "{{ _pgsql_data_dir[ansible_facts.os_family] }}/certs"
+
+        - name: Copy certificates
+          copy:
+            content: "{{ item.content }}"
+            dest: "{{ _pgsql_data_dir[ansible_facts.os_family] }}/certs/{{ item.filename }}"
+            owner: "{{ item.owner | default(omit) }}"
+            mode: "{{ item.mode | default(omit) }}"
+          loop_control:
+            label: "{{ item.filename }}"
+          loop:
+            - filename: server.key
+              content: |
+                {{ lookup('file', 'certs/' ~ ansible_facts['fqdn'] ~ '.key') }}
+              owner: postgres
+              mode: "0600"
+            - filename: server.crt
+              content: |
+                {{ lookup('file', 'certs/' ~ ansible_facts['fqdn'] ~ '.crt') }}
+            - filename: root.crt
+              content: |
+                {{ lookup('file', 'ca/Vagrant_Intermediate_CA.crt') }}
+                {{ lookup('file', 'ca/Vagrant_Root_CA.crt') }}
+
+    - name: Add pg_hba
+      community.postgresql.postgresql_pg_hba:
+        dest: "{{ _pgsql_config_dir[ansible_facts.os_family] }}/pg_hba.conf"
+        rules_behavior: combine
+        rules:
+          - { state: absent,  contype: host, databases: all, users: all, address: "127.0.0.1/32", method: ident }
+          - { state: absent,  contype: host, databases: all, users: all, address: "::1/128",      method: ident }
+          - { state: present, contype: host, databases: all, users: all, address: "127.0.0.1/32", method: md5 }
+          - { state: present, contype: host, databases: all, users: all, address: "::1/128",      method: md5 }
+          - state: present
+            contype: hostssl
+            databases: "{{ zabbix_server_dbname | default('zabbix-server') }}"
+            users: "{{ zabbix_server_dbuser | default('zabbix-server') }}"
+            address: "0.0.0.0/0"
+            method: md5
+          - state: present
+            contype: hostssl
+            databases: "{{ zabbix_server_dbname | default('zabbix-server') }}"
+            users: "{{ zabbix_server_dbuser | default('zabbix-server') }}"
+            address: "::0/0"
+            method: md5
+      notify: Restart PostgreSQL service
+      # I'm not sure why this isn't idempotent, so use register and changed_when.
+      register: _res
+      changed_when: _res.diff.before.pg_hba | symmetric_difference(_res.diff.after.pg_hba) | length != 0
+
+    # meta is here to prevent the "double-bounce" of the service. Unfortunately
+    # postgres has to be running for postgresql_set to work, so we'll get a
+    # double-bounce regardless.
+    #- meta: flush_handlers
+
+    - name: Verify PostgreSQL service is running
+      service:
+        name: "{{ _pgsql_service[ansible_facts.os_family] }}"
+        enabled: true
+        state: started
+
+    - name: Configure postgresql
+      when: item.is_required | default(true)
+      community.postgresql.postgresql_alter_system:
+        param: "{{ item.param }}"
+        value: "{{ item.value }}"
+      become_user: postgres
+      loop:
+        - { param: listen_addresses, value: '*' }
+        - { param: shared_preload_libraries, value: 'timescaledb', is_required: "{{ install_timescaledb }}" }
+        - { param: ssl, value: 'on' }
+        - { param: ssl_key_file, value: 'certs/server.key' }
+        - { param: ssl_cert_file, value: 'certs/server.crt' }
+        - { param: ssl_ca_file, value: 'certs/root.crt' }
+      notify: Restart PostgreSQL service
+
+  handlers:
+    - name: Restart PostgreSQL service
+      service:
+        name: "{{ _pgsql_service[ansible_facts.os_family] }}"
+        state: restarted

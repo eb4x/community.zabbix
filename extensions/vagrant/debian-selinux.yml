@@ -1,0 +1,35 @@
+# https://wiki.debian.org/SELinux/Setup
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        var: ansible_facts.selinux
+
+    - name: Install SELinux packages
+      package:
+        update_cache: true
+        name:
+          - auditd
+          - selinux-basics
+          - selinux-policy-default
+
+    - when: ansible_facts.selinux.status == "disabled"
+      command:
+        cmd: selinux-activate
+        creates: /.autorelabel
+      register: _selinux_activate
+
+    - when: _selinux_activate is changed
+      block:
+        - reboot:
+        - setup:
+
+    - command:
+        cmd: check-selinux-installation
+      register: _check_selinux
+
+    - assert:
+        that:
+          - "'SELinux is not enabled.' not in _check_selinux.stdout_lines"
+          - ansible_facts.selinux.status != "disabled"

@@ -1,0 +1,96 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+#  # This code was used to check upgrade path with Zabbix 7.0 requiring php 8.0
+#    - name: Check php module
+#      when:
+#        - ansible_facts['os_family'] == 'RedHat'
+#        - ansible_facts['distribution_major_version'] == '8'
+#      block:
+#        - name: Get enabled php module
+#          command: dnf module list php --enabled
+#          changed_when: false
+#          check_mode: false
+#          register: _php_module
+#
+#      # If the check fails, php is probably not installed.
+#      # So we recover by just installing it and checking again.
+#      rescue:
+#        - name: Install @php:7.2/common
+#          package:
+#            name: "@php:7.2/common"
+#          become: true
+#
+#        - name: Get enabled php module
+#          command: dnf module list php --enabled
+#          changed_when: false
+#          check_mode: false
+#          register: _php_module
+#
+#    - name: Upgrade php module for EL8
+#      when:
+#        - ansible_facts['os_family'] == 'RedHat'
+#        - ansible_facts['distribution_major_version'] == '8'
+#        - _php_module_version is version('8.0', '<')
+#      vars:
+#        _php_version: 'php\s+(?P<version>\d+\.\d+)'
+#        _php_module_version: "{{ _php_module.stdout | regex_search(_php_version, '\\g<version>') | first }}"
+#      become: true
+#      block:
+#        - name: Reset php module
+#          command: dnf module reset -y php
+#        - name: Install @php:8.0/common
+#          package:
+#            name: "@php:8.0/common"
+
+    - name: Install php
+      package:
+        name: "{{ _php_packages[http_server][_os_key] | default(_php_packages[http_server][ansible_facts.os_family] | default('php')) }}"
+        install_recommends: "{{ (ansible_facts.os_family == 'Debian') | ternary(false, omit) }}"
+      vars:
+        _os_key: "{{ (ansible_facts.os_family in ['RedHat']) | ternary(ansible_facts.os_family, ansible_facts.distribution) }}-{{ ansible_facts.distribution_major_version }}"
+        _php_packages:
+          apache:
+            Debian: ["apache2", "php-cli", "php-mysql", "php-pgsql"]
+            RedHat: ["php"]
+            RedHat-8: ["@php:8.0/common"]
+            Suse: ["apache2", "php8-cli", "php8-mysql", "php8-openssl", "php8-pgsql", "php8-xmlreader", "php8-xmlwriter"]
+          nginx:
+            Debian: ["php-fpm"]
+            RedHat: ["php"]
+            RedHat-8: ["@php:8.0/common"]
+
+    - name: Enable modules
+      when:
+        - ansible_facts.os_family == "Debian"
+        - http_server == "apache"
+      community.general.apache2_module:
+        state: present
+        name: "{{ item }}"
+      loop:
+        - rewrite
+        - ssl
+      notify:
+        - restart apache
+
+    - name: Enable modules
+      when:
+        - ansible_facts.os_family == "Suse"
+        - http_server == "apache"
+      lineinfile:
+        path: /etc/sysconfig/apache2
+        # Negative lookahead so we won't match on line that already contains option
+        regexp: "^APACHE_MODULES=\"((?!.*\\b{{ item }}\\b).*)\"$"
+        backrefs: true
+        line: "APACHE_MODULES=\"\\1 {{ item }}\""
+      loop:
+        - rewrite
+        - ssl
+
+  handlers:
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted

@@ -103,6 +103,8 @@
         salt: "{{ _zabbix_server_modern_auth | ternary(zabbix_server_mysql_auth_salt, omit) }}"
         host: "{{ zabbix_server_privileged_host }}"
         priv: "{{ zabbix_server_dbname }}.*:ALL"
+#        tls_requires:
+#          SSL:
         state: present
       vars:
         _zabbix_server_legacy_auth: "{{ zabbix_server_mysql_auth_plugin == 'mysql_native_password' }}"

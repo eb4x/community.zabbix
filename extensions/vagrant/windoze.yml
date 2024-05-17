@@ -1,0 +1,16 @@
+---
+- hosts: all
+  vars:
+    #ansible_user: vagrant
+    #ansible_password: vagrant
+    #ansible_connection: winrm
+    #ansible_winrm_transport: basic
+
+  tasks:
+    - debug:
+        var: ansible_facts
+    - copy:
+        content: |
+          {{ ansible_facts | to_nice_json }}
+        dest: "{{ ansible_facts.os_family }}-{{ ansible_facts.distribution_major_version }}.json"
+      delegate_to: localhost
