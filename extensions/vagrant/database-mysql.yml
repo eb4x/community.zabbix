@@ -1,0 +1,21 @@
+---
+- hosts: all
+  tasks:
+    - name: Install MySQL server w/ansible deps
+      package:
+        name: "{{ _mysql_package[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+      become: true
+      vars:
+        _mysql_package:
+          Debian-10: mariadb-server #v10.03.39 Must be at least v10.05.00
+          Debian-11: mariadb-server
+          Debian-12: mariadb-server
+          RedHat-8: "@mariadb:10.5/server"
+          RedHat-9: "@mariadb:10.11/server"
+
+    - name: Verify MySQL service is running
+      service:
+        name: mariadb
+        enabled: true
+        state: started
+      become: true

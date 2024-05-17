@@ -2,4 +2,4 @@
 - hosts: all
   become: true
   roles:
-    - role: zabbix_server
+    - role: community.zabbix.zabbix_server
