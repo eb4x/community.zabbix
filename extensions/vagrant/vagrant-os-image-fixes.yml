@@ -1,0 +1,32 @@
+---
+- hosts: all
+  tasks:
+    - name: Propagate ssh keys
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', ssh_key_path) }}"
+      vars:
+        ssh_key_path: "{{ lookup('first_found', ssh_key_paths) }}"
+        ssh_key_paths:
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_ed25519.pub"
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_ecdsa.pub"
+          - "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
+
+    - name: Remove buster-backports
+      lineinfile:
+        path: /etc/apt/sources.list
+        regexp: '^.*buster-backports.*$'
+        state: absent
+      become: true
+
+    - name: Fix become_user issues
+      when: ansible_facts['distribution'] == 'Debian'
+      package:
+        name: acl
+        update_cache: true
+      become: true
+
+    - name: bash-completion
+      package:
+        name: bash-completion
+      become: true

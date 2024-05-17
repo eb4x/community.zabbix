@@ -1,0 +1,142 @@
+---
+- hosts: all
+  vars:
+    _pgsql_package:
+      Debian-10: postgresql-11 # Needs pg-13
+      Debian-11: postgresql-13
+      Debian-12: postgresql-15
+      RedHat-8: "{{ zabbix_server_database_timescaledb | default(false) | ternary('timescaledb-2-postgresql-13', '@postgresql:13/server') }}"
+      RedHat-9: "{{ zabbix_server_database_timescaledb | default(false) | ternary('timescaledb-2-postgresql-15', '@postgresql:15/server') }}"
+
+    _pg_service:
+      Debian-10: postgresql # postgresql@11-main.service
+      Debian-11: postgresql # postgresql@13-main.service
+      Debian-12: postgresql # postgresql@15-main.service
+      RedHat-8: "{{ zabbix_server_database_timescaledb | default(false) | ternary('postgresql-13', 'postgresql') }}"
+      RedHat-9: "{{ zabbix_server_database_timescaledb | default(false) | ternary('postgresql-15', 'postgresql') }}"
+
+  tasks:
+    - name: PostgreSQL / TimescaleDB
+      when:
+        - zabbix_server_database_timescaledb | default(false)
+        - ansible_facts['os_family'] == 'RedHat'
+      become: true
+      block:
+        - name: Install pgsql repo
+          yum:
+            name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+            disable_gpg_check: true
+
+        - name: Install Timescale repo
+          yum_repository:
+            file: timescale_timescaledb
+            name: timescale_timescaledb
+            description: timescale_timescaledb
+            baseurl: https://packagecloud.io/timescale/timescaledb/el/{{ ansible_facts['distribution_major_version'] }}/$basearch
+            enabled: true
+            repo_gpgcheck: true
+            gpgcheck: false
+            gpgkey: https://packagecloud.io/timescale/timescaledb/gpgkey
+            metadata_expire: 300
+            sslverify: true
+            sslcacert: /etc/pki/tls/certs/ca-bundle.crt
+
+    - name: Install PostgreSQL server w/ansible deps
+      package:
+        name:
+          - "{{ _pgsql_package[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+          - python3-psycopg2
+        update_cache: "{{ (ansible_facts['os_family'] == 'Debian') | ternary(true, omit) }}"
+      become: true
+      vars:
+
+    - name: RedHat setup
+      when: ansible_facts['os_family'] == 'RedHat'
+      become: true
+      block:
+        - name: Check if PostgreSQL is initialized
+          stat:
+            path: "{{ _pgsql_data_path[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+          vars:
+            _pgsql_data_path:
+              RedHat-8: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/var/lib/pgsql/13/data', '/var/lib/pgsql/data') }}/PG_VERSION"
+              RedHat-9: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/var/lib/pgsql/15/data', '/var/lib/pgsql/data') }}/PG_VERSION"
+          register: _pg_version
+
+        - name: Initialize PostgreSQL database
+          when: not _pg_version.stat.exists
+          command: "{{ _pgsql_setup[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+          become: true
+          vars:
+            _pgsql_setup:
+              RedHat-8: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/usr/pgsql-13/bin/postgresql-13-setup initdb', '/usr/bin/postgresql-setup --initdb') }}"
+              RedHat-9: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/usr/pgsql-15/bin/postgresql-15-setup initdb', '/usr/bin/postgresql-setup --initdb') }}"
+
+        #- name: Open firewalld
+        #  when: false
+        #  ansible.posix.firewalld:
+        #    zone: pulic
+        #    service: postgresql
+        #    permanent: true
+        #    state: enabled
+        #  become: true
+
+
+    - name: Add pg_hba
+      community.postgresql.postgresql_pg_hba:
+        dest: "{{ _pg_hba_path[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+        state: "{{ item.state }}"
+        contype: host
+        databases: "{{ item.databases }}"
+        users: "{{ item.users }}"
+        address: "{{ item.address }}"
+        method: "{{ item.method | default('md5') }}"
+      loop:
+        - { state: absent,  databases: all, users: all, address: "127.0.0.1/32", method: ident }
+        - { state: absent,  databases: all, users: all, address: "::1/128",      method: ident }
+        - { state: present, databases: all, users: all, address: "127.0.0.1/32", method: md5 }
+        - { state: present, databases: all, users: all, address: "::1/128",      method: md5 }
+        - state: present
+          databases: "{{ zabbix_server_dbname | default('zabbix-server') }}"
+          users: "{{ zabbix_server_dbuser | default('zabbix-server') }}"
+          address: 0.0.0.0/0
+      vars:
+        _pg_hba_path:
+          Debian-10: /etc/postgresql/11/main/pg_hba.conf
+          Debian-11: /etc/postgresql/13/main/pg_hba.conf
+          Debian-12: /etc/postgresql/15/main/pg_hba.conf
+          RedHat-8: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/var/lib/pgsql/13/data/pg_hba.conf', '/var/lib/pgsql/data/pg_hba.conf') }}"
+          RedHat-9: "{{ zabbix_server_database_timescaledb | default(false) | ternary('/var/lib/pgsql/15/data/pg_hba.conf', '/var/lib/pgsql/data/pg_hba.conf') }}"
+      notify: Restart PostgreSQL service
+      become: true
+
+    # meta is here to prevent the "double-bounce" of the service. Unfortunately
+    # postgres has to be running for postgresql_set to work, so we'll get a
+    # double-bounce regardless.
+    #- meta: flush_handlers
+
+    - name: Verify PostgreSQL service is running
+      become: true
+      service:
+        name: "{{ _pg_service[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+        enabled: true
+        state: started
+
+    - name: Configure postgresql
+      when: item.is_required | default(true)
+      community.postgresql.postgresql_set:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      become: true
+      become_user: postgres
+      loop:
+        - { name: listen_addresses, value: '*' }
+        - { name: shared_preload_libraries, value: 'timescaledb', is_required: "{{ zabbix_server_database_timescaledb | default(false) }}" }
+      notify: Restart PostgreSQL service
+
+  handlers:
+    - name: Restart PostgreSQL service
+      become: true
+      service:
+        name: "{{ _pg_service[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+        state: restarted

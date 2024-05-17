@@ -1,0 +1,43 @@
+---
+- hosts: all
+  tasks:
+    - name: Check php module
+      when:
+        - ansible_facts['os_family'] == 'RedHat'
+        - ansible_facts['distribution_major_version'] == '8'
+      block:
+        - name: Get enabled php module
+          command: dnf module list php --enabled
+          changed_when: false
+          check_mode: false
+          register: _php_module
+
+      # If the check fails, php is probably not installed.
+      # So we recover by just installing it and checking again.
+      rescue:
+        - name: Install @php:7.2/common
+          package:
+            name: "@php:7.2/common"
+          become: true
+
+        - name: Get enabled php module
+          command: dnf module list php --enabled
+          changed_when: false
+          check_mode: false
+          register: _php_module
+
+    - name: Upgrade php module for EL8
+      when:
+        - ansible_facts['os_family'] == 'RedHat'
+        - ansible_facts['distribution_major_version'] == '8'
+        - _php_module_version is version('8.0', '<')
+      vars:
+        _php_version: 'php\s+(?P<version>\d+\.\d+)'
+        _php_module_version: "{{ _php_module.stdout | regex_search(_php_version, '\\g<version>') | first }}"
+      become: true
+      block:
+        - name: Reset php module
+          command: dnf module reset -y php
+        - name: Install @php:8.0/common
+          package:
+            name: "@php:8.0/common"
