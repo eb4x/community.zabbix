@@ -1,0 +1,82 @@
+---
+- hosts: all
+  tasks:
+    - name: Install MySQL server w/ansible deps
+      package:
+        name:
+          - "{{ _mysql_package[ansible_facts.os_family ~ '-' ~ ansible_facts.distribution_major_version] }}"
+          - "{{ _mysql_ansible_deps[ansible_facts.os_family] }}"
+      become: true
+      vars:
+        _mysql_package:
+          Debian-10: mariadb-server #v10.03.39 Must be at least v10.05.00
+          Debian-11: mariadb-server
+          Debian-12: mariadb-server
+          RedHat-8: "@mariadb:10.5/server"
+          RedHat-9: "@mariadb:10.11/server"
+        _mysql_ansible_deps:
+          RedHat: python3-PyMySQL
+          Debian: pymysql
+
+    - name: do certificates
+      when: inventory_hostname == 'zabbix-server-db'
+      become: true
+      block:
+        - name: create certs dir
+          file:
+            state: directory
+            path: /etc/my.cnf.d/certificates
+
+        - name: copy certificates
+          copy:
+            content: "{{ item.content }}"
+            dest: "{{ item.dest }}"
+          loop:
+            - content: "{{ lookup('file', 'certs/' ~ inventory_hostname ~ '.vagrant.local.key') ~ '\n' }}"
+              dest: /etc/my.cnf.d/certificates/server.key
+            - content: "{{ lookup('file', 'certs/' ~ inventory_hostname ~ '.vagrant.local.crt') ~ '\n' }}"
+              dest: /etc/my.cnf.d/certificates/server.crt
+            - content: |
+                {{ lookup('file', 'ca/Vagrant_Intermediate_CA.crt') }}
+                {{ lookup('file', 'ca/Vagrant_Root_CA.crt') }}
+              dest: /etc/my.cnf.d/certificates/ca.pem
+
+# XXX Server version must be 8.0 or greater.
+#        - name: enable certs?
+#          community.mysql.mysql_variables:
+#            login_unix_socket: /var/lib/mysql/mysql.sock
+#            mode: persist
+#            variable: "{{ item.variable }}"
+#            value: "{{ item.value }}"
+#          loop:
+#            - { variable: ssl_ca, value: /etc/my.cnf.d/certificates/ca.pem }
+#            - { variable: ssl_cert, value: /etc/my.cnf.d/certificates/server.crt }
+#            - { variable: ssl_key, value: /etc/my.cnf.d/certificates/server.key }
+
+        - name: enable certs?
+          ini_file:
+            create: false
+            path: /etc/my.cnf.d/mariadb-server.cnf
+            section: server
+            option: "{{ item.option }}"
+            value: "{{ item.value }}"
+          loop:
+            - { option: ssl_key, value: /etc/my.cnf.d/certificates/server.key }
+            - { option: ssl_cert, value: /etc/my.cnf.d/certificates/server.crt }
+            - { option: ssl_ca, value: /etc/my.cnf.d/certificates/ca.pem }
+          notify: Restart MySQL
+
+    - name: Verify MySQL service is running
+      service:
+        name: mariadb
+        enabled: true
+        state: started
+      become: true
+
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mariadb
+        enabled: true
+        state: restarted
+      become: true
