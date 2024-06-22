@@ -126,6 +126,5 @@
     - ansible_os_family in ["Debian", "Suse"]
   notify:
     - restart php-fpm-version
-    - restart php-fpm
   tags:
     - config

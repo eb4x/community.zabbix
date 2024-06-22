@@ -24,19 +24,10 @@
 
 - name: restart php-fpm-version
   ansible.builtin.service:
-    name: php{{ zabbix_web_php_installed_version }}-fpm
+    name: "{{ _php_fpm_service }}"
     state: restarted
     enabled: true
   become: true
-  when: ansible_facts['os_family'] == 'Debian'
-
-- name: restart php-fpm
-  ansible.builtin.service:
-    name: php-fpm
-    state: restarted
-    enabled: true
-  become: true
-  when: ansible_facts['os_family'] == 'Suse'
 
 - name: "clean repo files from proxy creds"
   ansible.builtin.shell: ls /etc/yum.repos.d/zabbix* && sed -i 's/^proxy =.*//' /etc/yum.repos.d/zabbix* || true
