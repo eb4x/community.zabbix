@@ -38,3 +38,9 @@
     - restart nginx
   tags:
     - config
+
+- name: Ensure php-fpm is running
+  ansible.builtin.service:
+    name: "{{ _php_fpm_service }}"
+    state: started
+    enabled: true
