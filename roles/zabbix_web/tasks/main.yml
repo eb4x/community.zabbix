@@ -115,19 +115,3 @@
   become: true
   tags:
     - config
-
-- name: "Debian / Suse | Install PHP"
-  ansible.builtin.template:
-    src: php-fpm.conf.j2
-    dest: "{{ zabbix_php_fpm_dir }}/zabbix.conf"
-    owner: "{{ zabbix_web_user }}"
-    group: "{{ zabbix_web_group }}"
-    mode: 0644
-  become: true
-  when:
-    - zabbix_web_create_php_fpm
-    - ansible_os_family in ["Debian", "Suse"]
-  notify:
-    - restart php-fpm-version
-  tags:
-    - config
