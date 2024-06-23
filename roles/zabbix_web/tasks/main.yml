@@ -26,8 +26,8 @@
   tags:
     - always
 
-- name: Determine PHP Version
-  ansible.builtin.shell: php --version | head -1 | awk '{ print $2 }' | awk -F '.' '{print $1"."$2}'
+- name: Get PHP Version
+  ansible.builtin.command: php --version
   register: _zabbix_web_php_installed_version
   changed_when: false
   tags:
@@ -36,7 +36,9 @@
 
 - name: Set PHP Version
   ansible.builtin.set_fact:
-    zabbix_web_php_installed_version: "{{ _zabbix_web_php_installed_version.stdout }}"
+    zabbix_web_php_installed_version: "{{ _zabbix_web_php_installed_version.stdout | regex_search(_versions, '\\g<php_version>') | first }}"
+  vars:
+    _versions: 'PHP\s+(?P<php_version>(?P<php_major_version>\d+)\.(?P<php_minor_version>\d+))\.(?P<php_patch_version>)'
   tags:
     - config
     - install
