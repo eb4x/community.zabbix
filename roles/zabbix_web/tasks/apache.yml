@@ -53,3 +53,9 @@
     - restart apache
   tags:
     - config
+
+- name: Ensure apache service is running
+  ansible.builtin.service:
+    name: "{{ _apache_service }}"
+    state: started
+    enabled: true
