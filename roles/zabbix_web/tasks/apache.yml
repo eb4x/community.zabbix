@@ -49,5 +49,7 @@
   when:
     - zabbix_web_create_vhost
     - ansible_facts['os_family'] == 'Debian'
+  notify:
+    - restart apache
   tags:
     - config
