@@ -39,8 +39,11 @@
   tags:
     - config
 
-- name: Ensure php-fpm is running
+- name: Ensure nginx/fpm services are running
   ansible.builtin.service:
-    name: "{{ _php_fpm_service }}"
+    name: "{{ item }}"
     state: started
     enabled: true
+  loop:
+    - "{{ _php_fpm_service }}"
+    - "{{ _nginx_service }}"
