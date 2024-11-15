@@ -64,6 +64,8 @@
         password: "{{ zabbix_server_dbpassword }}"
         host: "{{ zabbix_server_privileged_host }}"
         priv: "{{ zabbix_server_dbname }}.*:ALL"
+        tls_requires:
+          SSL:
         state: present
 
 - name: "MySQL verify or create schema"
