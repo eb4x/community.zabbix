@@ -1,0 +1,11 @@
+---
+- hosts: all
+  vars:
+    #ansible_user: vagrant
+    #ansible_password: vagrant
+    #ansible_connection: winrm
+    #ansible_winrm_transport: basic
+
+  tasks:
+    - debug:
+        var: ansible_facts

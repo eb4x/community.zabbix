@@ -39,6 +39,19 @@ Vagrant.configure("2") do |config|
   ENV['ANSIBLE_ROLES_PATH'] = "#{File.dirname(__FILE__)}/roles"
   #ENV['HTTP_PROXY'] = "http://squid_zbx_user:squid_zbx_pass@zabbix-integrations.vagrant.local:3128"
 
+  config.vm.define "zabbix-agent-win10" do |subconfig|
+    subconfig.vm.hostname = "zabbix-agent-win10.vagrant.local"
+    #subconfig.vm.box = "windows-server/2022"
+    subconfig.vm.box = "windows/10"
+
+    subconfig.vm.provider "libvirt" do |lv|
+      lv.input type: "tablet", bus: "usb"
+    end
+
+    subconfig.vm.provision "windoze", type: "ansible", compatibility_mode: "2.0",
+      raw_arguments: ["--diff"], playbook: "extensions/vagrant/windoze.yml"
+  end
+
   config.vm.define "zabbix-server-db" do |subconfig|
     subconfig.vm.hostname = "zabbix-server-db.vagrant.local"
     subconfig.vm.box = "almalinux/8"
