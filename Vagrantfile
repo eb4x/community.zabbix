@@ -457,4 +457,19 @@ Vagrant.configure("2") do |config|
       }
   end
 
+  config.vm.define "zabbix-integrations" do |subconfig|
+    subconfig.vm.hostname = "zabbix-integrations.vagrant.local"
+
+    subconfig.vm.box = "almalinux/9"
+    #subconfig.vm.box = "almalinux/8"
+
+    subconfig.vm.synced_folder '.', '/vagrant', disabled: true
+
+    # Testing proxy that requires auth;
+    #
+    # export https_proxy=http://zabbix-integrations.vagrant.local:3128
+    # curl -v --proxy-header 'Proxy-Authorization: Basic c3F1aWRfemJ4X3VzZXI6c3F1aWRfemJ4X3Bhc3M='
+    subconfig.vm.provision "squid", type: "ansible", compatibility_mode: "2.0",
+      raw_arguments: ["--diff"], playbook: "extensions/vagrant/squid.yml"
+  end
 end

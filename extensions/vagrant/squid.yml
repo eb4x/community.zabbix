@@ -1,0 +1,66 @@
+---
+- hosts: all
+  become: true
+  pre_tasks:
+    - name: Enable EPEL
+      package:
+        name: epel-release
+
+  tasks:
+    - name: Install squid
+      package:
+        name:
+          - python3-passlib
+          - squid
+
+    - name: Configure squid
+      lineinfile:
+        path: /etc/squid/squid.conf
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp | default(omit) }}"
+        backrefs: "{{ item.backrefs | default(false) }}"
+      loop:
+        - line: "#http_access allow localnet"
+          regexp: '^#?\s*http_access allow localnet'
+      notify: Restart squid
+
+    - blockinfile:
+        path: /etc/squid/squid.conf
+        insertafter: '(?m)# INSERT YOUR OWN RULE\(S\) HERE TO ALLOW ACCESS FROM YOUR CLIENTS\n.*'
+        prepend_newline: true
+        block: |
+          auth_param basic program /usr/lib64/squid/basic_ncsa_auth /etc/squid/passwords
+          auth_param basic realm Proxy Authentication Required
+          auth_param basic credentialsttl 2 hours
+          auth_param basic casesensitive on
+
+          # Define an ACL for authenticated users
+          acl authenticated_users proxy_auth REQUIRED
+
+          # Allow authenticated users to use the proxy
+          http_access allow authenticated_users
+
+          # Deny all other access
+          http_access deny all
+      notify: Restart squid
+
+    - name: Add auth account
+      community.general.htpasswd:
+        path: /etc/squid/passwords
+        name: squid_zbx_user
+        password: squid_zbx_pass
+        owner: squid
+        mode: "0640"
+
+    - meta: flush_handlers
+
+    - name: Verify squid is running
+      service:
+        name: squid
+        state: started
+
+  handlers:
+    - name: Restart squid
+      service:
+        name: squid
+        state: restarted
