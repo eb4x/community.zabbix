@@ -32,7 +32,7 @@ _zabbix_proxy_pre72_database:  /usr/share/zabbix-sql-scripts/
 zabbix_proxy_database_file_dir:  "{{ zabbix_proxy_version is version('7.0', '>') | ternary( _zabbix_proxy_post72_database, _zabbix_proxy_pre72_database ) }}"
 
 # SELinux specific
-selinux_allow_zabbix_can_network: false
+selinux_allow_zabbix_can_network: true
 selinux_allow_daemons_enable_cluster_mode: false
 
 # Misc.

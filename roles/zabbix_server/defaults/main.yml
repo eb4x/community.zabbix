@@ -32,7 +32,7 @@ _zabbix_server_pre72_database:  /usr/share/zabbix-sql-scripts/
 zabbix_server_database_file_dir:  "{{ zabbix_server_version is version('7.0', '>') | ternary( _zabbix_server_post72_database, _zabbix_server_pre72_database ) }}"
 
 # SELinux specific
-selinux_allow_zabbix_can_network: false
+selinux_allow_zabbix_can_network: true
 
 #Misc.
 zabbix_server_include_mode: "0755"
