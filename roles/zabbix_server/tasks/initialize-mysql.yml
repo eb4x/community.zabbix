@@ -11,7 +11,6 @@
   become: true
   tags:
     - install
-    - database
     - dependencies
 
 # NOTE: Upgrading system-packages with pip is generally a bad idea, but
@@ -26,7 +25,6 @@
     _upgrade_suse_pymysql: "{{ ansible_facts['os_family'] in ['Suse'] }}"
   tags:
     - install
-    - database
     - dependencies
 
 - name: "MySQL Database prep"
@@ -35,8 +33,6 @@
   delegate_to: "{{ zabbix_server_real_dbhost | default(zabbix_server_dbhost_run_install | ternary(delegated_dbhost, inventory_hostname)) }}"
   vars:
     delegated_dbhost: "{{ (zabbix_server_dbhost == 'localhost') | ternary(inventory_hostname, zabbix_server_dbhost) }}"
-  tags:
-    - database
   block:
     - name: "MySQL | Create database"
       community.mysql.mysql_db:
@@ -70,8 +66,6 @@
   when: zabbix_server_database_sqlload | bool
   vars:
     delegated_dbhost: "{{ (zabbix_server_dbhost == 'localhost') | ternary(inventory_hostname, zabbix_server_dbhost) }}"
-  tags:
-    - database
   block:
     # If this check fails, then there's no dbversion table in the database,
     # hence it has not been populated, and we'll create it, below.

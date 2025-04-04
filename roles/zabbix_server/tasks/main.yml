@@ -51,6 +51,8 @@
 
 - name: "Initialize the database"
   ansible.builtin.include_tasks: "initialize-{{ zabbix_server_database }}.yml"
+  tags:
+    - database
 
 - name: "Configure zabbix-server"
   ansible.builtin.template:
