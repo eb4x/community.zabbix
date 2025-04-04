@@ -1,5 +1,4 @@
 ---
-# tasks file for zabbix_proxy
 - name: "Include OS-specific variables"
   ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
   tags:

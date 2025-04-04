@@ -1,3 +1,4 @@
+---
 _pidfile: /var/run/zabbix/zabbix_agentd.pid
 _includes:
   - /etc/zabbix/zabbix_agentd.d

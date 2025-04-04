@@ -1,3 +1,4 @@
+---
 zabbix_valid_proxy_versions:
   "9":
     - 7.2

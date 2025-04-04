@@ -1,3 +1,4 @@
+---
 zabbix_valid_javagateway_versions:
   # Debian
   "12":

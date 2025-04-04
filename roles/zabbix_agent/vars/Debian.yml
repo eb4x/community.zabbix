@@ -1,6 +1,4 @@
 ---
-# vars file for zabbix_agent (Debian)
-
 zabbix_agent: zabbix-agent
 
 _zabbix_agent_install_recommends: false

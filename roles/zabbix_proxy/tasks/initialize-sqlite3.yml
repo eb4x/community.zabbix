@@ -1,5 +1,4 @@
 ---
-# task file for sqlite3
 - name: "Install SQLite3 dependencies"
   when: zabbix_proxy_database_creation or zabbix_proxy_database_sqlload
   ansible.builtin.package:

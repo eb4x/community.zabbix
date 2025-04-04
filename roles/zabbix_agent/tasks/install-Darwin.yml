@@ -1,5 +1,4 @@
 ---
-# Tasks specific for macOS
 - name: "macOS | Check installed package version"
   ansible.builtin.shell: |
     set -o pipefail

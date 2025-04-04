@@ -1,5 +1,4 @@
 ---
-# task file for postgresql
 - name: "Install PostgreSQL dependencies"
   when: zabbix_proxy_database_creation or zabbix_proxy_database_sqlload
   ansible.builtin.package:
