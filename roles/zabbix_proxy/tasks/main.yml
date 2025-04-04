@@ -70,6 +70,8 @@
 
 - name: "Initialize the database"
   ansible.builtin.include_tasks: "initialize-{{ zabbix_proxy_database }}.yml"
+  tags:
+    - database
 
 - name: "Create directories"
   ansible.builtin.file:

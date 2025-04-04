@@ -12,7 +12,6 @@
   until: _zabbix_proxy_dependencies_installed is succeeded
   tags:
     - install
-    - database
     - dependencies
 
 # NOTE: Upgrading system-packages with pip is generally a bad idea, but
@@ -27,7 +26,6 @@
     _upgrade_suse_pymysql: "{{ ansible_facts['os_family'] in ['Suse'] }}"
   tags:
     - install
-    - database
     - dependencies
 
 - name: "MySQL Database prep"
@@ -36,9 +34,6 @@
   delegate_to: "{{ zabbix_proxy_real_dbhost | default(zabbix_proxy_dbhost_run_install | ternary(delegated_dbhost, inventory_hostname)) }}"
   vars:
     delegated_dbhost: "{{ (zabbix_proxy_dbhost == 'localhost') | ternary(inventory_hostname, zabbix_proxy_dbhost) }}"
-  tags:
-    - database
-    - skip_ansible_lint
   block:
     - name: "MySQL | Create database"
       community.mysql.mysql_db:
@@ -70,8 +65,6 @@
   when: zabbix_proxy_database_sqlload | bool
   vars:
     delegated_dbhost: "{{ (zabbix_proxy_dbhost == 'localhost') | ternary(inventory_hostname, zabbix_proxy_dbhost) }}"
-  tags:
-    - database
   block:
     - name: "MySQL | Get current database version"
       community.mysql.mysql_query:

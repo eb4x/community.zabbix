@@ -12,7 +12,6 @@
   until: _zabbix_proxy_pgsql_packages_installed is succeeded
   tags:
     - install
-    - database
     - dependencies
 
 - name: "PostgreSQL Database prep"
@@ -22,8 +21,6 @@
   delegate_to: "{{ zabbix_proxy_dbhost_run_install | ternary(delegated_dbhost, inventory_hostname) }}"
   vars:
     delegated_dbhost: "{{ (zabbix_proxy_dbhost == 'localhost') | ternary(inventory_hostname, zabbix_proxy_dbhost) }}"
-  tags:
-    - database
   block:
     - name: "PostgreSQL | Create database"
       community.postgresql.postgresql_db:
@@ -59,8 +56,6 @@
 
 - name: "PostgreSQL verify or create schema"
   when: zabbix_proxy_database_sqlload | bool
-  tags:
-    - database
   block:
     - name: "PostgreSQL | Get current database version"
       community.postgresql.postgresql_query:

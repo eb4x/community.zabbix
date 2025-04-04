@@ -12,21 +12,16 @@
   until: _zabbix_proxy_sqlite3_packages_installed is succeeded
   tags:
     - install
-    - database
     - dependencies
 
 - name: "SQLite3 | Set path for default dbname"
   when: zabbix_proxy_dbname == "zabbix_proxy"
   ansible.builtin.set_fact:
     zabbix_proxy_dbname: /var/lib/zabbix/zabbix_proxy.db
-  tags:
-    - database
 
 - name: "SQLite3 Database prep"
   when: zabbix_proxy_database_creation | bool
   become: true
-  tags:
-    - database
   block:
     - name: "SQLite3 | Create path directories"
       ansible.builtin.file:
