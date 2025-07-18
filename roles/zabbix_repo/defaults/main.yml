@@ -1,7 +1,7 @@
 ---
 # Yum/APT  Variables
 zabbix_repo_version: "7.4"
-zabbix_repo_yum_gpgcheck: 0
+zabbix_repo_yum_gpgcheck: 1
 zabbix_repo_yum_schema: https
 zabbix_repo_deb_schema: https
 zabbix_repo_deb_url: "{{ zabbix_repo_version is version('7.0', '>') | ternary(_post_72_deb_repo, _pre_72_deb_repo) }}"
