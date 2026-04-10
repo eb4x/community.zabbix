@@ -25,7 +25,7 @@
 
 - name: Install Repository
   ansible.builtin.include_role:
-    name: community.zabbix.zabbix_repo
+    name: zabbix_repo
   vars:
     zabbix_repo_version: "{{ zabbix_server_version }}"
     zabbix_repo_package: "zabbix-server-{{ zabbix_server_database }}"

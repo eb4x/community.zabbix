@@ -22,7 +22,7 @@ platforms:
 #      - ${MY_MOLECULE_DATABASE:-mysql}
 #      - ${MY_MOLECULE_VERSION:-v74}
 
-  # Developer example
+  # Debian-13 v74
   - name: zabbix-web-apache-mysql-v74-debian13
     image: geerlingguy/docker-debian13-ansible:latest
     privileged: true
@@ -32,28 +32,6 @@ platforms:
     cgroupns_mode: host
     groups:
       - apache
-      - mysql
-      - v74
-  - name: zabbix-web-apache-pgsql-v74-debian13
-    image: geerlingguy/docker-debian13-ansible:latest
-    privileged: true
-    pre_build_image: true
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    cgroupns_mode: host
-    groups:
-      - apache
-      - pgsql
-      - v74
-  - name: zabbix-web-nginx-mysql-v74-debian13
-    image: geerlingguy/docker-debian13-ansible:latest
-    privileged: true
-    pre_build_image: true
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    cgroupns_mode: host
-    groups:
-      - nginx
       - mysql
       - v74
   - name: zabbix-web-nginx-pgsql-v74-debian13
@@ -67,6 +45,233 @@ platforms:
       - nginx
       - pgsql
       - v74
+  # Debian-13 v60
+  - name: zabbix-web-apache-pgsql-v60-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - pgsql
+      - v60
+  - name: zabbix-web-nginx-mysql-v60-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - mysql
+      - v60
+
+  # RedHat-9
+  - name: zabbix-web-apache-mysql-v74-rockylinux9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - mysql
+      - v74
+  - name: zabbix-web-nginx-pgsql-v74-rockylinux9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - pgsql
+      - v74
+  - name: zabbix-web-apache-pgsql-v60-rockylinux9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - pgsql
+      - v60
+  - name: zabbix-web-nginx-mysql-v60-rockylinux9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - mysql
+      - v60
+
+  # Suse-15 v74
+  - name: zabbix-web-apache-pgsql-v74-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - pgsql
+      - v74
+  - name: zabbix-web-nginx-mysql-v74-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - mysql
+      - v74
+  # Suse-15 v70
+  - name: zabbix-web-apache-mysql-v70-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - mysql
+      - v70
+  - name: zabbix-web-nginx-pgsql-v70-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - pgsql
+      - v70
+  # Suse-15 v60
+  - name: zabbix-web-apache-pgsql-v60-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - pgsql
+      - v60
+  - name: zabbix-web-nginx-mysql-v60-opensuseleap15
+    image: geerlingguy/docker-opensuseleap15-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - mysql
+      - v60
+
+#  # Ubuntu-24
+  - name: zabbix-web-apache-mysql-v74-ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - mysql
+      - v74
+  - name: zabbix-web-nginx-pgsql-v74-ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - pgsql
+      - v74
+  - name: zabbix-web-apache-pgsql-v60-ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - apache
+      - pgsql
+      - v60
+  - name: zabbix-web-nginx-mysql-v60-ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - nginx
+      - mysql
+      - v60
 
 provisioner:
   name: ansible

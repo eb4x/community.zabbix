@@ -9,8 +9,9 @@ driver:
   name: default
 
 platforms:
-  - name: zabbix-server-${MY_MOLECULE_VERSION:-v74}-${MY_MOLECULE_DATABASE:-mysql}-${MY_MOLECULE_CONTAINER:-rockylinux10}
-    image: geerlingguy/docker-${MY_MOLECULE_IMAGE:-rockylinux10}-ansible:latest
+  # Debian 13 7.4
+  - name: zabbix-server-mysql-v74-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
     privileged: true
     pre_build_image: true
     command: ${MOLECULE_DOCKER_COMMAND:-""}
@@ -20,8 +21,189 @@ platforms:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
     groups:
-      - ${MY_MOLECULE_DATABASE:-mysql}
-      - ${MY_MOLECULE_VERSION:-v74}
+      - mysql
+      - v74
+  - name: zabbix-server-pgsql-v74-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v74
+
+  # Debian 13 7.0
+  - name: zabbix-server-mysql-v70-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - mysql
+      - v70
+  - name: zabbix-server-pgsql-v70-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v70
+
+  # Debian 13 6.0
+  - name: zabbix-server-mysql-v60-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - mysql
+      - v60
+  - name: zabbix-server-pgsql-v60-debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v60
+
+  # Debian 12 7.4
+  - name: zabbix-server-mysql-v74-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - mysql
+      - v74
+  - name: zabbix-server-pgsql-v74-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v74
+
+  # Debian 12 7.0
+  - name: zabbix-server-mysql-v70-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - mysql
+      - v70
+  - name: zabbix-server-pgsql-v70-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v70
+
+  # Debian 12 6.0
+  - name: zabbix-server-mysql-v60-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - mysql
+      - v60
+  - name: zabbix-server-pgsql-v60-debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    networks:
+      - name: zabbix
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - pgsql
+      - v60
+
+  # RedHat-10 7.4
+#  - name: zabbix-server-mysql-v74-rockylinux10
+#    image: geerlingguy/docker-rockylinux10-ansible:latest
+#    privileged: true
+#    pre_build_image: true
+#    command: ${MOLECULE_DOCKER_COMMAND:-""}
+#    networks:
+#      - name: zabbix
+#    volumes:
+#      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+#    cgroupns_mode: host
+#    groups:
+#      - mysql
+#      - v74
+#  - name: zabbix-server-pgsql-v74-rockylinux10
+#    image: geerlingguy/docker-rockylinux10-ansible:latest
+#    privileged: true
+#    pre_build_image: true
+#    command: ${MOLECULE_DOCKER_COMMAND:-""}
+#    networks:
+#      - name: zabbix
+#    volumes:
+#      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+#    cgroupns_mode: host
+#    groups:
+#      - pgsql
+#      - v74
 
 provisioner:
   name: ansible
