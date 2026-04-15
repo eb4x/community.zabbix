@@ -22,6 +22,8 @@
       loop:
         - line: "#http_access allow localnet"
           regexp: '^#?\s*http_access allow localnet'
+        - line: "cache_dir ufs /var/spool/squid 10000 16 256"
+          regexp: '^#?\s*cache_dir'
       notify: Restart squid
 
     - blockinfile:
@@ -42,6 +44,12 @@
 
           # Deny all other access
           http_access deny all
+
+          # Claude suggested Cache-Control: no-store overrides
+          refresh_pattern -i \\.rpm$ 129600 100% 129600 override-expire ignore-no-cache ignore-no-store
+          refresh_pattern -i \\.deb$ 129600 100% 129600 override-expire ignore-no-cache ignore-no-store
+          refresh_pattern -i \\.rpm\\.gz$ 129600 100% 129600 override-expire ignore-no-cache ignore-no-store
+          refresh_pattern . 0 20% 4320
       notify: Restart squid
 
     - name: Add auth account
@@ -51,6 +59,43 @@
         password: squid_zbx_pass
         owner: squid
         mode: "0640"
+
+    - name: Configure SSL bumping
+      block:
+        - name: Copy Vagrant CA chain for SSL bumping
+          copy:
+            content: "{{ item.content }}"
+            dest: "/etc/squid/{{ item.filename }}"
+            owner: squid
+            mode: "{{ item.mode }}"
+          loop:
+            - filename: bump-ca.key
+              content: |
+                {{ lookup('file', 'ca/Vagrant_Intermediate_CA.key') }}
+              mode: "0600"
+            - filename: bump-ca.crt
+              content: |
+                {{ lookup('file', 'ca/Vagrant_Intermediate_CA.crt') }}
+                {{ lookup('file', 'ca/Vagrant_Root_CA.crt') }}
+              mode: "0644"
+        - name: Initialize Squid TLS session database
+          become_user: squid
+          command:
+            cmd: /usr/lib64/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
+          args:
+            creates: /var/spool/squid/ssl_db
+        - name: Configure SSL bump directives
+          lineinfile:
+            path: /etc/squid/squid.conf
+            line: "{{ item.line }}"
+            regexp: "{{ item.regexp | default(omit) }}"
+          loop:
+            - line: "http_port 3128 ssl-bump cert=/etc/squid/bump-ca.crt key=/etc/squid/bump-ca.key"
+              regexp: '^http_port 3128'
+            - line: ssl_bump bump all
+            - line: sslcrtd_program /usr/lib64/squid/security_file_certgen -s /var/spool/squid/ssl_db -M 4MB
+            - line: sslproxy_cert_error allow all
+          notify: Restart squid
 
     - meta: flush_handlers
 

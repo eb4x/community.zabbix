@@ -291,6 +291,7 @@ Vagrant.configure("2") do |config|
       database = (db == "timescale") ? "pgsql" : db
 
       apply_provisioners(subconfig,
+        #:squid_client,
         :python3,
         :vagrant_os_image_fixes,
         :letsencrypt,
@@ -640,7 +641,12 @@ Vagrant.configure("2") do |config|
 
     subconfig.vm.provider "libvirt" do |lv|
       lv.loader = loader_for_box(subconfig.vm.box)
+      lv.machine_virtual_size = 40
     end
+    apply_provisioners(subconfig,
+      :python3,
+      :vagrant_os_image_fixes,
+    )
 
     # Testing proxy that requires auth;
     #
