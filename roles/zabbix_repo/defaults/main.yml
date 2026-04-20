@@ -17,7 +17,7 @@ zabbix_repo_yum:
     state: present
   - name: zabbix-non-supported
     description: Zabbix Official Repository non-supported - $basearch
-    baseurl: "{{ zabbix_repo_yum_schema }}://repo.zabbix.com/non-supported/rhel/{{ ansible_facts['distribution_major_version'] }}/$basearch/"
+    baseurl: "{{ zabbix_repo_yum_schema }}://repo.zabbix.com/non-supported/rhel/$releasever/$basearch/"
     mode: "0644"
     gpgcheck: "{{ zabbix_repo_yum_gpgcheck }}"
     gpgkey: "file:///etc/pki/rpm-gpg/{{ zabbix_repo_rpm_gpg_key_non_supported_url | basename }}"
