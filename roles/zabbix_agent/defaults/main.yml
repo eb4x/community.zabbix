@@ -82,8 +82,7 @@ zabbix_host_status: enabled # or disabled
 zabbix_agent_proxy: null
 zabbix_agent_inventory_mode: disabled
 zabbix_useuip: 1
-zabbix_host_groups:
-  - Linux servers
+zabbix_host_groups: "{{ _zabbix_agent_host_groups | default(['Linux servers']) }}"
 zabbix_agent_link_templates: "{{ _zabbix_agent_link_templates | default(['Linux by Zabbix agent']) }}"
 
 zabbix_agent_interfaces:
@@ -121,8 +120,8 @@ zabbix_agent_win_service: "{{ zabbix_agent2 | ternary('Zabbix Agent 2', 'Zabbix 
 zabbix_win_firewall_management: true
 
 # macOS Related
-zabbix_mac_package: "zabbix_agent-{{ zabbix_agent_version_long }}-macos-amd64-openssl.pkg"
-zabbix_mac_download_link: "{{ zabbix_agent_download_base_url }}/{{ zabbix_agent_version }}/{{ zabbix_agent_version_long }}/{{ zabbix_mac_package }}"
+zabbix_mac_package: "zabbix_agent-{{ zabbix_agent_version_long }}-macos-{{ _zabbix_agent_mac_arch }}-openssl.{{ _zabbix_agent_mac_package_ext }}"
+zabbix_mac_download_link: "{{ zabbix_agent_download_base_url }}/{{ zabbix_agent_version }}/{{ ('latest' in zabbix_agent_version_long) | ternary('latest', zabbix_agent_version_long) }}/{{ zabbix_mac_package }}"
 
 # Zabbix Agent Docker facts
 zabbix_agent_docker: false

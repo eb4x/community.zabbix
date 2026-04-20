@@ -1,0 +1,35 @@
+---
+# Purposefully override these defaults
+zabbix_agent_version_check: false
+zabbix_agent2: false
+
+_zabbix_agent_mac_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+_zabbix_agent_mac_arch: "{{ _zabbix_agent_mac_arch_map[ansible_facts.architecture] }}"
+
+_zabbix_agent_mac_package_ext_map:
+  amd64: tar.gz
+  arm64: pkg
+_zabbix_agent_mac_package_ext: "{{ _zabbix_agent_mac_package_ext_map[_zabbix_agent_mac_arch] }}"
+
+#_zabbix_agent_mac_amd64_tar_gz_releases:
+#  "7.4": 7.4.1   # as of 7.4.9
+#  "7.0": 7.4.9   # as of 7.0.25
+#  "6.0": 6.0.40  # as of 6.0.45
+#
+#_zabbix_agent_mac_amd64_pkg_releases:
+#  "6.4": 6.4.13
+#  "6.0": 6.0.28
+
+zabbix_agent_pidfile: /tmp/zabbix_agentd.pid
+_zabbix_agent_conf_dir: "/usr/local/etc/zabbix"
+_zabbix_agent_include_dirs:
+  - "{{ _zabbix_agent_conf_dir }}/zabbix_agentd"
+
+_zabbix_agent_root_group: wheel
+
+_zabbix_agent_host_groups:
+  - macOS workstations
+_zabbix_agent_link_templates:
+  - macOS by Zabbix agent

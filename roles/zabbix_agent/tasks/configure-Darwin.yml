@@ -1,0 +1,21 @@
+---
+- name: "Configure zabbix-agent"
+  ansible.builtin.template:
+    src: agent.conf.j2
+    dest: "{{ zabbix_agent_conf_file }}"
+    owner: root
+    group: "{{ _zabbix_agent_root_group | default('root') }}"
+    mode: "{{ zabbix_agent_conf_mode }}"
+  notify:
+    - restart mac zabbix-agent
+  become: true
+  tags:
+    - config
+
+- name: Ensure zabbix_agent is running
+  community.general.launchd:
+    name: com.zabbix.zabbix_agentd
+    state: started
+    enabled: true
+  become: true
+

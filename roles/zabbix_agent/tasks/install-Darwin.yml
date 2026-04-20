@@ -1,22 +1,87 @@
 ---
-# Tasks specific for macOS
-- name: "macOS | Check installed package version"
-  ansible.builtin.shell: |
-    set -o pipefail
-    pkgutil --pkg-info 'com.zabbix.pkg.ZabbixAgent' | grep 'version:' | cut -d ' ' -f 2
-  register: pkgutil_version
-  check_mode: false
-  changed_when: false
-  failed_when: pkgutil_version.rc == 2
+- name: Set zabbix_agent_version_long for amd64
+  when:
+    - zabbix_agent_version_long is not defined
+    - ansible_facts['architecture'] == 'x86_64'
+  set_fact:
+    zabbix_agent_version_long: "{{ zabbix_agent_version }}-latest"
+
+- name: Get version for arm64
+  when:
+    - zabbix_agent_version_long is not defined
+    - ansible_facts['architecture'] == 'aarch64'
+  block:
+    - name: Get latest zabbix releases
+      uri:
+        url: "{{ zabbix_agent_releases_url }}"
+        return_content: true
+        status_code: [200, 304]
+      register: _zabbix_versions
+      run_once: true
+
+    - name: Set zabbix_agent_version_long for arm64
+      set_fact:
+        zabbix_agent_version_long: "{{ _zabbix_versions.json | json_query(_latest_release) }}"
+      vars:
+        _latest_release: "versions[?version=='{{ zabbix_agent_version }}'].latest_release.release | [0]"
 
 - name: "macOS | Download the Zabbix package"
   ansible.builtin.get_url:
     url: "{{ zabbix_mac_download_link }}"
     dest: "/tmp/{{ zabbix_mac_package }}"
     mode: 0644
-  when: pkgutil_version.stdout != zabbix_version_long
 
-- name: "macOS | Install the Zabbix package"
-  ansible.builtin.command: installer -pkg "/tmp/{{ zabbix_mac_package }}" -target /
+# XXX: requires "brew install gnu-tar"
+# maybe replace with command: ?
+- name: Extract Zabbix package
+  when: _zabbix_agent_mac_package_ext == 'tar.gz'
   become: true
-  when: pkgutil_version.stdout != zabbix_version_long
+  unarchive:
+    remote_src: true
+    src: "/tmp/{{ zabbix_mac_package }}"
+    dest: /usr/local
+    exclude:
+      - etc/zabbix/zabbix_agentd.conf
+    extra_opts:
+      - --no-same-owner
+      - --no-same-permissions
+      - --touch
+  environment:
+    PATH: "/usr/local/opt/gnu-tar/libexec/gnubin:{{ ansible_env['PATH'] }}"
+
+# sudo launchctl print system/com.zabbix.zabbix_agentd
+# sudo launchctl bootstrap system /Library/LaunchDaemons/com.zabbix.zabbix_agentd.plist
+# sudo launchctl bootout system /Library/LaunchDaemons/com.zabbix.zabbix_agentd.plist
+- name: Copy launch daemon
+  become: true
+  copy:
+    src: com.zabbix.zabbix_agentd.plist
+    dest: /Library/LaunchDaemons/com.zabbix.zabbix_agentd.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+
+# pkgutil --pkgs
+# pkgutil --pkg-info com.zabbix.pkg.ZabbixAgent
+# pkgutil --only-files --files com.zabbix.pkg.ZabbixAgent
+# stop service
+# pkgutil --forget com.zabbix.pkg.ZabbixAgent
+# delete all files listed
+
+#- name: "macOS | Check installed package version"
+#  ansible.builtin.shell: |
+#    set -o pipefail
+#    pkgutil --pkg-info 'com.zabbix.pkg.ZabbixAgent' | grep 'version:' | cut -d ' ' -f 2
+#  register: pkgutil_version
+#  check_mode: false
+#  changed_when: false
+#  failed_when: pkgutil_version.rc == 2
+
+#- name: "macOS | Install the Zabbix package"
+#  when:
+#    - _zabbix_agent_mac_package_ext == 'pkg'
+#    - pkgutil_version.stdout != zabbix_version_long
+#  become: true
+#  ansible.builtin.command:
+#    cmd: "installer -pkg /tmp/{{ zabbix_mac_package }} -target /"
+#  creates: /Library/LaunchDaemons/com.zabbix.zabbix_agentd.plist

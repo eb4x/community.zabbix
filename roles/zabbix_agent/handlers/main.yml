@@ -23,13 +23,14 @@
   when:
     - ansible_facts['os_family'] == "Windows"
 
-- name: restart mac zabbix agent
-  ansible.builtin.command: "launchctl kickstart -k system/{{ zabbix_agent_service }}"
+- name: restart mac zabbix-agent
+  community.general.launchd:
+    name: com.zabbix.zabbix_agentd
+    state: restarted
   become: true
   when:
+    - ansible_facts['os_family'] == "Darwin"
     - not zabbix_agent_docker
-    - ansible_facts.os_family == "Darwin"
-
 
 - name: restart sysctl
   ansible.builtin.service:
