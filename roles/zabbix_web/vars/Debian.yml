@@ -5,8 +5,8 @@ _zabbix_web_http_service:
   apache: apache2
   nginx: nginx
 _zabbix_web_vhost_location:
-  apache: /etc/apache2/sites-available/zabbix.conf
-  nginx: /etc/nginx/conf.d/zabbix.conf
+  apache: /etc/zabbix/apache.conf
+  nginx: /etc/zabbix/nginx.conf
 
 _apache_log: apache2
 _apache_test_cmd: apache2ctl configtest
