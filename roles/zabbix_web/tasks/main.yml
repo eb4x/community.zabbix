@@ -100,9 +100,14 @@
       Debian: root
     _mode:
       Suse: "0750"
+  register: _res
   tags:
     - install
     - config
+
+- assert:
+    that:
+      - _res is not changed
 
 - name: "Configure zabbix-web"
   ansible.builtin.template:
