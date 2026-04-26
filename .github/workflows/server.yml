@@ -44,13 +44,9 @@ jobs:
           - pgsql
         version:
           - v74
-          - v72
           - v70
           - v60
         exclude:
-          - container:
-              image: rockylinux10
-            version: v72
           - container:
               image: rockylinux10
             version: v70
@@ -58,14 +54,8 @@ jobs:
               image: rockylinux10
             version: v60
           - container:
-              image: debian13
-            version: v72
-          - container:
               image: debian11
             version: v74
-          - container:
-              image: debian11
-            version: v72
           - container:
               image: debian11
             version: v70
@@ -141,7 +131,6 @@ jobs:
           - pgsql
         version:
           - v74
-          - v72
           - v70
           - v60
     steps:
